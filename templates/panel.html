@@ -190,6 +190,19 @@ white-space:nowrap;
 td{
 padding:15px 12px;
 border-bottom:1px solid var(--border);
+max-width:200px;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+vertical-align:middle;
+}
+
+td .code{
+max-width:150px;
+display:inline-block;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
 }
 
 tbody tr{
@@ -198,6 +211,11 @@ transition:background .2s;
 
 tbody tr:hover{
 background:rgba(255,255,255,.03);
+}
+
+tbody tr:hover td{
+overflow:visible;
+white-space:normal;
 }
 
 .badge{

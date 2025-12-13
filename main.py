@@ -40,8 +40,8 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory="templates")
 
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "Admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "27761991Pp!")
 
 # 🔒 PANEL IP KISITLAMASI - Sadece bu IP'ler girebilir!
 # Render.com Environment Variables'a ekle: ALLOWED_PANEL_IPS=95.70.194.254
@@ -156,7 +156,8 @@ def is_hwid_banned(db: Session, hwid: str) -> bool:
 # TIME (TEK OTORİTE)
 # =========================
 def server_utcnow() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """Türkiye saati (UTC+3 İstanbul)"""
+    return datetime.now(timezone(timedelta(hours=3))).replace(tzinfo=None)
 
 # =========================
 # IP / AUTH
@@ -198,10 +199,12 @@ async def root():
 # =========================
 @app.get("/api/time")
 async def api_time():
-    now = datetime.now(timezone.utc)
+    """Türkiye saati (UTC+3)"""
+    now = datetime.now(timezone(timedelta(hours=3)))
     return {
         "utc_timestamp": now.timestamp(),
-        "utc_iso": now.isoformat()
+        "utc_iso": now.isoformat(),
+        "timezone": "Europe/Istanbul (UTC+3)"
     }
 
 # =========================
@@ -287,7 +290,7 @@ async def api_activate(
     return {
         "status": "active",
         "remaining_seconds": remaining,
-        "server_timestamp": datetime.now(timezone.utc).timestamp()
+        "server_timestamp": datetime.now(timezone(timedelta(hours=3))).timestamp()
     }
 
 @app.post("/api/check")
@@ -326,7 +329,7 @@ async def api_check(
     return {
         "status": "active",
         "remaining_seconds": remaining,
-        "server_timestamp": datetime.now(timezone.utc).timestamp()
+        "server_timestamp": datetime.now(timezone(timedelta(hours=3))).timestamp()
     }
 
 # =========================

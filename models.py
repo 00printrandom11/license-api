@@ -7,13 +7,16 @@ from sqlalchemy import (
     Float,
     Text
 )
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from database import Base
 
 
 def utcnow():
-    """ Tek zaman standardı """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """
+    Türkiye saati (UTC+3 İstanbul)
+    Tüm zaman kayıtları Türkiye saati ile yapılır
+    """
+    return datetime.now(timezone(timedelta(hours=3))).replace(tzinfo=None)
 
 
 class License(Base):
