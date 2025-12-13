@@ -27,13 +27,13 @@
 **Discord Bot'u ekleme:**
 
 #### ADIM 1: Discord Bot klasörünü repo'ya dahil et:
-Zaten dahil! `Discord Bot/` klasörü repo'da.
+Zaten dahil! `discord-bot/` klasörü repo'da.
 
 #### ADIM 2: Render.com'da 2. Servis Oluştur:
 
 1. **https://dashboard.render.com** → **+ New** → **Background Worker**
 2. **Repository:** `license-api` seç
-3. **Root Directory:** `Discord Bot` yaz (ÖNEMLİ!)
+3. **Root Directory:** `discord-bot` yaz (ÖNEMLİ! Boşluk YOK!)
 4. **Name:** `captcha-crush-bot`
 5. **Build Command:** `pip install -r requirements.txt`
 6. **Start Command:** `python ticket_bot.py`
@@ -135,7 +135,7 @@ license-api/                    ← GitHub Repo
 ├── templates/
 │   ├── login.html
 │   └── panel.html              ← Discord Bot toggle butonu eklendi
-├── Discord Bot/                ← Bot klasörü
+├── discord-bot/                ← Bot klasörü (YENİ AD!)
 │   ├── ticket_bot.py           ← Bot kodu
 │   ├── requirements.txt
 │   ├── .env.example
