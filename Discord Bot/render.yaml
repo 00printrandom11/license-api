@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: captcha-crush-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python ticket_bot.py
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: PANEL_API_URL
+        value: https://license-api-5p24.onrender.com
+      - key: DISCORD_BOT_API_KEY
+        value: CaptchaCrushSecretKey2024!@#
+

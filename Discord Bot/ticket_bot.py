@@ -476,10 +476,62 @@ class PaymentConfirmView(discord.ui.View):
                         )
                         success_embed.set_footer(text="Captcha Crush License System")
 
+                        # Ticket kanalında paylaş
                         await interaction.channel.send(
                             content=f"{self.ticket_creator.mention}",
                             embed=success_embed
                         )
+
+                        # Müşteriye özel mesaj (DM) gönder
+                        try:
+                            dm_embed = discord.Embed(
+                                title="🎉 Lisans Oluşturuldu!",
+                                description=f"Ödemeniz onaylandı! İşte lisansınız:",
+                                color=discord.Color.green(),
+                                timestamp=datetime.utcnow()
+                            )
+
+                            dm_embed.add_field(
+                                name="🔑 Lisans Key",
+                                value=f"```{license_key}```",
+                                inline=False
+                            )
+
+                            dm_embed.add_field(
+                                name="⏰ Süre",
+                                value="30 Gün",
+                                inline=True
+                            )
+
+                            dm_embed.add_field(
+                                name="✅ Durum",
+                                value="Aktif",
+                                inline=True
+                            )
+
+                            dm_embed.add_field(
+                                name="📝 Kullanım",
+                                value="Bu key'i uygulamaya yapıştırarak kullanabilirsin!",
+                                inline=False
+                            )
+
+                            dm_embed.set_footer(text="Captcha Crush - Lisans Sistemi")
+
+                            # DM gönder
+                            await self.ticket_creator.send(embed=dm_embed)
+
+                            # Ticket'te bilgi ver
+                            await interaction.channel.send(
+                                f"✅ {self.ticket_creator.mention} Lisans key'i özel mesaj olarak da gönderildi!"
+                            )
+
+                        except discord.Forbidden:
+                            # DM kapalıysa ticket'te bilgi ver
+                            await interaction.channel.send(
+                                f"⚠️ {self.ticket_creator.mention} DM'lerin kapalı olduğu için özel mesaj gönderilemedi! Lisans key'ini yukarıdan kopyala."
+                            )
+                        except Exception as dm_error:
+                            print(f"❌ DM gönderilemedi: {dm_error}")
 
                         # Butonu güncelle
                         button.label = "✅ Ödeme Tamamlandı"
