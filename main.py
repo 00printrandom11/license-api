@@ -43,9 +43,10 @@ templates = Jinja2Templates(directory="templates")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
-# ⚠️ Render'da sorun yaşarsan boş bırakabilirsin
+# 🔒 PANEL IP KISITLAMASI - Sadece bu IP'ler girebilir!
+# Render.com Environment Variables'a ekle: ALLOWED_PANEL_IPS=95.70.194.254
 ALLOWED_PANEL_IPS = set(
-    ip.strip() for ip in os.getenv("ALLOWED_PANEL_IPS", "").split(",") if ip.strip()
+    ip.strip() for ip in os.getenv("ALLOWED_PANEL_IPS", "95.70.194.254").split(",") if ip.strip()
 )
 
 # =========================

@@ -1,0 +1,108 @@
+🚨 RENDER.COM - ACİL İŞLEMLER
+==========================================
+
+SORUN 1: IP Kısıtlaması YOK ❌
+SORUN 2: Database Kolonları EKSİK ❌
+
+==========================================
+ADIM 1: Environment Variables Ekle
+==========================================
+
+Render.com Dashboard:
+1. Services → license-api
+2. Environment → Environment Variables
+3. Şunu ekle:
+
+   Key: ALLOWED_PANEL_IPS
+   Value: 95.70.194.254
+
+4. "Save Changes"
+
+Bu IP dışında kimse panele giremeyecek! 🔒
+
+==========================================
+ADIM 2: Database Migration (Shell)
+==========================================
+
+Render.com Dashboard:
+1. Services → license-api
+2. Shell (üst menü)
+3. Şunu yapıştır ve ENTER:
+
+python migrate_db.py
+
+4. Çıktıyı kontrol et:
+   ✅ "Migration Tamamlandı!" görmeli
+
+==========================================
+ADIM 3: Servisi Restart Et
+==========================================
+
+Render.com Dashboard:
+1. Manual Deploy → "Deploy latest commit"
+   VEYA
+2. Settings → "Restart Service"
+
+==========================================
+ADIM 4: Test Et
+==========================================
+
+1. Panel URL'nizi açın
+2. IP'niz: 95.70.194.254 ✅ → Giriş yapabilir
+3. Başka IP → 403 Forbidden 🚫
+
+==========================================
+SORUN YAŞARSAN
+==========================================
+
+Seçenek A: GitHub'a Push ve Tekrar Deploy
+-----------------------------------------
+cd C:\Users\aLmiLa\Desktop\license-api
+git add migrate_db.py main.py
+git commit -m "Add IP whitelist and migration script"
+git push
+
+Render otomatik deploy eder.
+
+Seçenek B: Manuel Database Düzeltme
+-----------------------------------------
+Render.com Shell:
+
+python
+
+from database import engine
+from sqlalchemy import text
+
+with engine.connect() as conn:
+    conn.execute(text("ALTER TABLE licenses ADD COLUMN hwid_change_count INTEGER DEFAULT 0"))
+    conn.execute(text("ALTER TABLE licenses ADD COLUMN ip_change_count INTEGER DEFAULT 0"))
+    conn.execute(text("ALTER TABLE licenses ADD COLUMN check_count INTEGER DEFAULT 0"))
+    conn.execute(text("ALTER TABLE licenses ADD COLUMN abuse_score INTEGER DEFAULT 0"))
+    conn.execute(text("ALTER TABLE licenses ADD COLUMN is_banned BOOLEAN DEFAULT 0"))
+    conn.commit()
+
+exit()
+
+==========================================
+GÜVENLİK KONTROL
+==========================================
+
+✅ ALLOWED_PANEL_IPS = 95.70.194.254
+✅ ensure_panel_ip() fonksiyonu aktif
+✅ Başka IP'ler 403 alacak
+
+Test:
+- Kendi IP'nden aç → Giriş yapabilir ✅
+- VPN ile aç → 403 Forbidden 🚫
+- Telefon hotspot ile aç → 403 Forbidden 🚫
+
+==========================================
+
+ÖZET:
+1. Environment Variables → ALLOWED_PANEL_IPS ekle
+2. Shell → python migrate_db.py
+3. Restart service
+4. Test et!
+
+==========================================
+
