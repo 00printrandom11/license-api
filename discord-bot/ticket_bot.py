@@ -237,11 +237,19 @@ async def handle_ticket_creation(interaction: discord.Interaction):
     )
     view.add_item(button)
 
-    await interaction.response.send_message(
+    # Mesajı gönder ve 5 saniye sonra sil
+    response = await interaction.response.send_message(
         embed=redirect_embed,
         view=view,
         ephemeral=True
     )
+
+    # 5 saniye bekle ve mesajı sil
+    await asyncio.sleep(5)
+    try:
+        await interaction.delete_original_response()
+    except:
+        pass  # Zaten silinmişse hata verme
 
 
 async def show_captcha_selection(interaction: discord.Interaction):
@@ -432,10 +440,18 @@ class PaymentConfirmView(discord.ui.View):
 
     @discord.ui.button(label="💳 Ödeme Yapıldı", style=discord.ButtonStyle.success, custom_id="payment_confirmed")
     async def payment_confirmed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Sadece admin basabilir
+        # ÇİFT GÜVENLİK: Hem admin olmalı, hem de ticket açan olmamalı
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message(
                 "❌ Bu butona sadece yöneticiler basabilir!",
+                ephemeral=True
+            )
+            return
+
+        # Ticket açan kesinlikle key alamaz!
+        if interaction.user == self.ticket_creator:
+            await interaction.response.send_message(
+                "❌ Ticket açan kişi kendi ödeme onayını yapamaz! Güvenlik nedeniyle engellendi.",
                 ephemeral=True
             )
             return
@@ -492,7 +508,8 @@ class PaymentConfirmView(discord.ui.View):
                         # Ticket kanalında paylaş
                         await interaction.channel.send(
                             content=f"{self.ticket_creator.mention}",
-                            embed=success_embed
+                            embed=success_embed,
+                            view=CloseTicketView()  # Ticketi kapatma butonu eklendi
                         )
 
                         # Müşteriye özel mesaj (DM) gönder
