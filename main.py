@@ -597,3 +597,50 @@ async def license_ws(ws: WebSocket, license_key: str):
             await ws.receive_text()
     except WebSocketDisconnect:
         active_sockets.pop(license_key, None)
+
+# =========================
+# DISCORD BOT API
+# =========================
+DISCORD_BOT_API_KEY = os.getenv("DISCORD_BOT_API_KEY", "YOUR_SECRET_API_KEY_HERE")
+
+class CreateLicenseRequest(BaseModel):
+    api_key: str
+    duration_days: int
+    note: str = ""
+
+@app.post("/api/create_license")
+async def api_create_license(
+    req: CreateLicenseRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Discord bot için lisans oluşturma API - IP kısıtlaması YOK (API key ile korunuyor)"""
+    # API key kontrolü (IP yerine key ile güvenlik)
+    if req.api_key != DISCORD_BOT_API_KEY:
+        client_ip = get_client_ip(request)
+        log_action(db, "api_invalid_key", "create_license", f"Invalid API key attempt", "discord_bot", client_ip, False)
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    # Lisans oluştur
+    import uuid
+    key = uuid.uuid4().hex[:24]
+    lic = License(
+        license_key=key,
+        duration_days=req.duration_days,
+        note=req.note,
+        is_active=True  # Discord bot ile oluşturulanlar direkt aktif
+    )
+    db.add(lic)
+    db.commit()
+    db.refresh(lic)
+
+    # Log kaydet
+    log_action(db, "license_created_via_api", key, f"Duration: {req.duration_days} days, Note: {req.note}", "discord_bot", "api", True)
+
+    return {
+        "success": True,
+        "license_key": key,
+        "duration_days": req.duration_days,
+        "note": req.note,
+        "is_active": True
+    }
