@@ -694,14 +694,17 @@ async def setup_command(interaction: discord.Interaction):
             permissions=discord.Permissions(administrator=True)
         )
 
-    # Eski emoji'siz Tickets kategorisini sil (varsa)
-    old_category = discord.utils.get(guild.categories, name="Tickets")
-    if old_category:
-        # Kategorideki tüm kanalları sil
-        for channel in old_category.channels:
-            await channel.delete()
-        # Kategoriyi sil
-        await old_category.delete()
+    # TÜM ESKİ TICKETS KATEGORİLERİNİ TEMİZLE
+    # Emoji'siz "Tickets" ve diğer varyasyonları sil
+    for category in guild.categories:
+        # Emoji'li 🎫 Tickets hariç diğer Tickets kategorilerini sil
+        if "ticket" in category.name.lower() and category.name != "🎫 Tickets":
+            print(f"🗑️ Eski kategori siliniyor: {category.name}")
+            # Kategorideki tüm kanalları sil
+            for channel in category.channels:
+                await channel.delete()
+            # Kategoriyi sil
+            await category.delete()
 
     # Tickets kategorisi oluştur (🎫 ikon ile)
     category = discord.utils.get(guild.categories, name="🎫 Tickets")
