@@ -448,12 +448,12 @@ async def panel_create(
         license_key=key,
         duration_days=duration_days,
         note=note,
-        is_active=True
+        is_active=False  # 🔒 PASİF olarak oluşturulur - Admin manuel aktif edecek
     )
     db.add(lic)
     db.commit()
 
-    log_action(db, "license_created", key, f"Duration: {duration_days} days, Note: {note}", "admin", get_client_ip(request), True)
+    log_action(db, "license_created", key, f"Duration: {duration_days} days, Note: {note}, Status: PASSIVE", "admin", get_client_ip(request), True)
 
     return RedirectResponse("/panel", status_code=303)
 

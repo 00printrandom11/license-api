@@ -28,7 +28,7 @@ class License(Base):
     hwid = Column(String(256), default="", index=True)
 
     duration_days = Column(Float, default=30)
-    is_active = Column(Boolean, default=True)  # 🔥 Varsayılan aktif
+    is_active = Column(Boolean, default=False)  # 🔒 Varsayılan PASİF - Admin aktif edecek
     is_banned = Column(Boolean, default=False)  # admin hard-ban
 
     # =========================
