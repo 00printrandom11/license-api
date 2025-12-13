@@ -440,18 +440,28 @@ class PaymentConfirmView(discord.ui.View):
 
     @discord.ui.button(label="💳 Ödeme Yapıldı", style=discord.ButtonStyle.success, custom_id="payment_confirmed")
     async def payment_confirmed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # ÇİFT GÜVENLİK: Hem admin olmalı, hem de ticket açan olmamalı
-        if not interaction.user.guild_permissions.administrator:
+        # GÜVENLİK KONTROL SİSTEMİ
+        is_owner = interaction.user.id == interaction.guild.owner_id
+        is_admin = interaction.user.guild_permissions.administrator
+        is_ticket_creator = interaction.user == self.ticket_creator
+
+        # KURAL 1: Sunucu sahibi her zaman basabilir (ticket açan olsa bile)
+        if is_owner:
+            pass  # Sunucu sahibi için kontrol yok, devam et
+        # KURAL 2: Admin ise ama ticket açan KENDİSİ ise basamaz
+        elif is_admin and is_ticket_creator:
             await interaction.response.send_message(
-                "❌ Bu butona sadece yöneticiler basabilir!",
+                "❌ Ticket açan kişi kendi ödeme onayını yapamaz! Güvenlik nedeniyle engellendi.",
                 ephemeral=True
             )
             return
-
-        # Ticket açan kesinlikle key alamaz!
-        if interaction.user == self.ticket_creator:
+        # KURAL 3: Admin ise ve ticket açan değilse basabilir
+        elif is_admin and not is_ticket_creator:
+            pass  # Admin olup ticket açan olmayan, devam et
+        # KURAL 4: Admin değilse hiç basamaz
+        else:
             await interaction.response.send_message(
-                "❌ Ticket açan kişi kendi ödeme onayını yapamaz! Güvenlik nedeniyle engellendi.",
+                "❌ Bu butona sadece yöneticiler basabilir!",
                 ephemeral=True
             )
             return
