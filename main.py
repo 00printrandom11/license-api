@@ -217,6 +217,11 @@ class LicenseRequest(BaseModel):
 async def root():
     return "License API running"
 
+@app.get("/bot_status")
+async def bot_status_endpoint():
+    """Discord bot durumunu döndür (public endpoint)"""
+    return {"status": get_bot_status()}
+
 # =========================
 # SERVER TIME
 # =========================
