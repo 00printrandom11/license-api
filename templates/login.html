@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Admin Login • Control Center</title>
+
+<style>
+:root{
+    --bg:#0b0f14;
+    --card:#161b22;
+    --border:#30363d;
+    --text:#e6edf3;
+    --green:#2ecc71;
+    --red:#e74c3c;
+}
+
+*{box-sizing:border-box}
+
+body{
+    background:radial-gradient(circle at top,#0d1117,#05070a);
+    font-family:"Segoe UI",system-ui;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow:hidden;
+}
+
+.login-box{
+    width:360px;
+    background:linear-gradient(180deg,#161b22,#0d1117);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:30px;
+    box-shadow:0 0 60px rgba(0,0,0,.8);
+    animation:fadeIn .6s ease;
+}
+
+@keyframes fadeIn{
+    from{opacity:0;transform:translateY(15px)}
+    to{opacity:1;transform:none}
+}
+
+h2{
+    text-align:center;
+    margin-bottom:5px;
+}
+
+.subtitle{
+    text-align:center;
+    font-size:13px;
+    opacity:.6;
+    margin-bottom:25px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin-bottom:15px;
+    background:#0b0f14;
+    border:1px solid var(--border);
+    border-radius:10px;
+    color:white;
+    font-size:14px;
+    outline:none;
+    transition:.2s;
+}
+
+input:focus{
+    border-color:var(--green);
+    box-shadow:0 0 0 2px rgba(46,204,113,.15);
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:linear-gradient(135deg,#2ecc71,#27ae60);
+    border:none;
+    border-radius:12px;
+    font-size:15px;
+    font-weight:600;
+    color:#000;
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 25px rgba(46,204,113,.35);
+}
+
+.error{
+    margin-top:15px;
+    background:rgba(231,76,60,.12);
+    border:1px solid rgba(231,76,60,.4);
+    color:var(--red);
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
+    text-align:center;
+    animation:shake .35s;
+}
+
+@keyframes shake{
+    0%{transform:translateX(0)}
+    25%{transform:translateX(-5px)}
+    50%{transform:translateX(5px)}
+    75%{transform:translateX(-5px)}
+    100%{transform:translateX(0)}
+}
+
+.footer{
+    margin-top:25px;
+    text-align:center;
+    font-size:11px;
+    opacity:.4;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+    <h2>🔐 Admin Panel</h2>
+    <div class="subtitle">End-Game License Control Center</div>
+
+    <form method="post">
+        <input name="username" placeholder="Kullanıcı adı" autofocus required>
+        <input name="password" type="password" placeholder="Şifre" required>
+
+        <button type="submit">Giriş Yap</button>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+    </form>
+
+    <div class="footer">
+        Secure access • Unauthorized entry prohibited
+    </div>
+</div>
+
+</body>
+</html>
