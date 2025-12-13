@@ -49,6 +49,28 @@ ALLOWED_PANEL_IPS = set(
     ip.strip() for ip in os.getenv("ALLOWED_PANEL_IPS", "95.70.194.254").split(",") if ip.strip()
 )
 
+# 🤖 DISCORD BOT KONTROL
+# Bot durumu dosyası (Render.com'da persistent storage değil, restart'ta sıfırlanır)
+BOT_STATUS_FILE = "bot_status.txt"
+
+def get_bot_status() -> bool:
+    """Discord bot'un durumunu kontrol et"""
+    try:
+        if os.path.exists(BOT_STATUS_FILE):
+            with open(BOT_STATUS_FILE, "r") as f:
+                return f.read().strip() == "running"
+        return False
+    except:
+        return False
+
+def set_bot_status(status: bool):
+    """Discord bot durumunu kaydet"""
+    try:
+        with open(BOT_STATUS_FILE, "w") as f:
+            f.write("running" if status else "stopped")
+    except:
+        pass
+
 # =========================
 # WEBSOCKET CONNECTIONS
 # =========================
@@ -404,12 +426,16 @@ async def panel_dashboard(
     # Banlı HWID'ler
     banned_hwids = db.query(BannedHWID).order_by(desc(BannedHWID.banned_at)).all()
 
+    # Bot durumu
+    bot_status = get_bot_status()
+
     return templates.TemplateResponse(
         "panel.html",
         {
             "request": request,
             "licenses": licenses,
             "now": now,
+            "bot_status": bot_status,
             "metrics": {
                 "total": total_licenses,
                 "active_now": active_now,
@@ -585,10 +611,32 @@ async def panel_reset_abuse(
 
     return RedirectResponse("/panel", status_code=303)
 
+@app.post("/panel/toggle_bot")
+async def panel_toggle_bot(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Discord bot'u aç/kapat"""
+    ensure_panel_ip(request)
+    require_login(request)
+
+    current_status = get_bot_status()
+    new_status = not current_status
+    set_bot_status(new_status)
+
+    action = "bot_started" if new_status else "bot_stopped"
+    log_action(db, action, "discord_bot", f"Status: {'running' if new_status else 'stopped'}", "admin", get_client_ip(request), True)
+
+    return JSONResponse({
+        "success": True,
+        "status": new_status,
+        "message": f"Bot {'başlatıldı' if new_status else 'durduruldu'}"
+    })
+
 # =========================
-# WEBSOCKET ENDPOINT
+# WEBSOCKET
 # =========================
-@app.websocket("/ws/{license_key}")
+@app.websocket("/ws/license/{license_key}")
 async def license_ws(ws: WebSocket, license_key: str):
     await ws.accept()
     active_sockets[license_key] = ws

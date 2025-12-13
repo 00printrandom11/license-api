@@ -29,6 +29,19 @@ DISCORD_BOT_API_KEY = os.getenv("DISCORD_BOT_API_KEY", "CaptchaCrushSecretKey202
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Bot durumu kontrolü
+async def check_bot_status():
+    """Panel'den bot durumunu kontrol et"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{PANEL_API_URL}/bot_status") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return data.get("status", True)
+        return True  # API'ye erişilemezse çalışmaya devam et
+    except:
+        return True  # Hata durumunda çalışmaya devam et
+
 # Konfigürasyon
 TICKET_CATEGORY_ID = None  # Manuel olarak ayarlanacak
 TICKET_LOGS_CHANNEL_ID = None  # Manuel olarak ayarlanacak
