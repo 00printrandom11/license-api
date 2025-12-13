@@ -694,22 +694,27 @@ async def setup_command(interaction: discord.Interaction):
             permissions=discord.Permissions(administrator=True)
         )
 
-    # TÜM ESKİ TICKETS KATEGORİLERİNİ TEMİZLE
-    # Emoji'siz "Tickets" ve diğer varyasyonları sil
-    for category in guild.categories:
-        # Emoji'li 🎫 Tickets hariç diğer Tickets kategorilerini sil
-        if "ticket" in category.name.lower() and category.name != "🎫 Tickets":
-            print(f"🗑️ Eski kategori siliniyor: {category.name}")
+    # SADECE DUPLIKE KATEGORİLERİ TEMİZLE
+    # Aynı isimde birden fazla kategori varsa eskilerini sil
+    target_category_name = "🎫 Tickets"
+    matching_categories = [cat for cat in guild.categories if cat.name == target_category_name]
+
+    # Eğer 2 veya daha fazla aynı isimde kategori varsa, ilki hariç diğerlerini sil
+    if len(matching_categories) > 1:
+        print(f"⚠️ {len(matching_categories)} adet '{target_category_name}' kategorisi bulundu! Duplikatlar siliniyor...")
+        for category_to_remove in matching_categories[1:]:  # İlki hariç diğerlerini sil
+            print(f"🗑️ Duplike kategori siliniyor: {category_to_remove.name} (ID: {category_to_remove.id})")
             # Kategorideki tüm kanalları sil
-            for channel in category.channels:
+            for channel in category_to_remove.channels:
                 await channel.delete()
             # Kategoriyi sil
-            await category.delete()
+            await category_to_remove.delete()
 
-    # Tickets kategorisi oluştur (🎫 ikon ile)
-    category = discord.utils.get(guild.categories, name="🎫 Tickets")
+    # Tickets kategorisi oluştur (🎫 ikon ile) - eğer yoksa
+    category = discord.utils.get(guild.categories, name=target_category_name)
     if not category:
-        category = await guild.create_category("🎫 Tickets")
+        category = await guild.create_category(target_category_name)
+        print(f"✅ Kategori oluşturuldu: {target_category_name}")
 
     # ticket-olustur kanalı oluştur (yazma yasak, sadece buton)
     ticket_create_channel = discord.utils.get(guild.text_channels, name="ticket-olustur")
