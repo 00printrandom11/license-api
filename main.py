@@ -169,12 +169,9 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "0.0.0.0"
 
 def ensure_panel_ip(request: Request):
-    """IP kısıtlaması - geçici olarak devre dışı"""
-    # Geçici olarak tüm IP'lere izin ver
-    return
-    # IP kısıtlaması aktif etmek için yukarıdaki "return"ı sil
+    """IP kısıtlaması - Sadece izin verilen IP'ler panele girebilir"""
     if ALLOWED_PANEL_IPS and get_client_ip(request) not in ALLOWED_PANEL_IPS:
-        raise HTTPException(status_code=403)
+        raise HTTPException(status_code=403, detail="IP adresi yetkilendirilmemiş")
 
 def is_logged_in(request: Request) -> bool:
     return bool(request.session.get("admin_logged_in"))
