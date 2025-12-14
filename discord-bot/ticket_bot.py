@@ -873,64 +873,95 @@ async def on_ready():
 async def setup_roles(guild: discord.Guild):
     """Sunucuda rolleri oluştur ve mevcut üyelere dağıt"""
     try:
+        print(f"🔍 Sunucu: {guild.name} - Rol sistemi başlatılıyor...")
+        print(f"📋 Mevcut roller: {[role.name for role in guild.roles]}")
+
         # Rolleri oluştur veya kontrol et
         captcha_member_role = discord.utils.get(guild.roles, name=ROLE_CAPTCHA_MEMBER)
         if not captcha_member_role:
+            print(f"⚠️ '{ROLE_CAPTCHA_MEMBER}' rolü bulunamadı, oluşturuluyor...")
             captcha_member_role = await guild.create_role(
                 name=ROLE_CAPTCHA_MEMBER,
                 color=discord.Color.blue(),
                 reason="Otomatik rol oluşturma - Yeni üyeler için"
             )
             print(f"✅ '{ROLE_CAPTCHA_MEMBER}' rolü oluşturuldu")
+        else:
+            print(f"✅ '{ROLE_CAPTCHA_MEMBER}' rolü zaten mevcut (ID: {captcha_member_role.id})")
 
         premium_member_role = discord.utils.get(guild.roles, name=ROLE_PREMIUM_MEMBER)
         if not premium_member_role:
+            print(f"⚠️ '{ROLE_PREMIUM_MEMBER}' rolü bulunamadı, oluşturuluyor...")
             premium_member_role = await guild.create_role(
                 name=ROLE_PREMIUM_MEMBER,
                 color=discord.Color.gold(),
                 reason="Otomatik rol oluşturma - Premium üyeler için"
             )
             print(f"✅ '{ROLE_PREMIUM_MEMBER}' rolü oluşturuldu")
+        else:
+            print(f"✅ '{ROLE_PREMIUM_MEMBER}' rolü zaten mevcut (ID: {premium_member_role.id})")
 
         server_booster_role = discord.utils.get(guild.roles, name=ROLE_SERVER_BOOSTER)
         if not server_booster_role:
+            print(f"⚠️ '{ROLE_SERVER_BOOSTER}' rolü bulunamadı, oluşturuluyor...")
             server_booster_role = await guild.create_role(
                 name=ROLE_SERVER_BOOSTER,
                 color=discord.Color.pink(),
                 reason="Otomatik rol oluşturma - Server boosterlar için"
             )
             print(f"✅ '{ROLE_SERVER_BOOSTER}' rolü oluşturuldu")
+        else:
+            print(f"✅ '{ROLE_SERVER_BOOSTER}' rolü zaten mevcut (ID: {server_booster_role.id})")
 
         # Mevcut tüm üyelere Captcha Member rolünü ver (bot ve admin olmayanlar)
+        print(f"👥 Üyelere rol dağıtımı başlatılıyor...")
         assigned_count = 0
+        skipped_bot = 0
+        skipped_admin = 0
+        already_has = 0
+
         for member in guild.members:
             if member.bot:
+                skipped_bot += 1
                 continue  # Botları atla
             if member.guild_permissions.administrator:
+                skipped_admin += 1
                 continue  # Adminleri atla
 
             # Captcha Member rolü yoksa ver
             if captcha_member_role not in member.roles:
                 await member.add_roles(captcha_member_role, reason="Otomatik rol ataması")
                 assigned_count += 1
+                print(f"  ✅ {member.name} → Captcha Member verildi")
+            else:
+                already_has += 1
 
-        if assigned_count > 0:
-            print(f"✅ {assigned_count} üyeye '{ROLE_CAPTCHA_MEMBER}' rolü verildi")
+        print(f"📊 Rol dağıtım raporu:")
+        print(f"  ✅ Yeni rol verildi: {assigned_count}")
+        print(f"  ℹ️ Zaten var: {already_has}")
+        print(f"  ⏭️ Bot atlandı: {skipped_bot}")
+        print(f"  ⏭️ Admin atlandı: {skipped_admin}")
 
     except Exception as e:
         print(f"❌ Rol kurulumu hatası: {e}")
+        import traceback
+        traceback.print_exc()
 
 @bot.event
 async def on_member_join(member: discord.Member):
     """Yeni üye katıldığında otomatik rol ver"""
     if member.bot:
+        print(f"⚠️ {member.name} bot olduğu için rol verilmedi")
         return  # Botlara rol verme
 
     try:
+        print(f"👋 Yeni üye: {member.name} (ID: {member.id})")
         captcha_member_role = discord.utils.get(member.guild.roles, name=ROLE_CAPTCHA_MEMBER)
         if captcha_member_role:
             await member.add_roles(captcha_member_role, reason="Yeni üye - Otomatik rol ataması")
             print(f"✅ {member.name} katıldı ve '{ROLE_CAPTCHA_MEMBER}' rolü verildi")
+        else:
+            print(f"❌ '{ROLE_CAPTCHA_MEMBER}' rolü bulunamadı!")
     except Exception as e:
         print(f"❌ Yeni üyeye rol verilemedi: {e}")
 
@@ -941,15 +972,22 @@ async def on_member_update(before: discord.Member, after: discord.Member):
     if not before.premium_since and after.premium_since:
         # Üye boost attı
         try:
+            print(f"🚀 {after.name} sunucuya boost attı!")
             server_booster_role = discord.utils.get(after.guild.roles, name=ROLE_SERVER_BOOSTER)
             if server_booster_role and server_booster_role not in after.roles:
                 await after.add_roles(server_booster_role, reason="Sunucuya boost attı")
                 print(f"✅ {after.name} boost attı ve '{ROLE_SERVER_BOOSTER}' rolü verildi")
+            elif not server_booster_role:
+                print(f"❌ '{ROLE_SERVER_BOOSTER}' rolü bulunamadı!")
+            else:
+                print(f"ℹ️ {after.name} zaten '{ROLE_SERVER_BOOSTER}' rolüne sahip")
         except Exception as e:
             print(f"❌ Booster rolü verilemedi: {e}")
 
 async def upgrade_to_premium(member: discord.Member):
     """Üyeyi Premium'a yükselt (Sadece normal üyeler için)"""
+    print(f"🔍 Premium yükseltme kontrolü: {member.name}")
+
     # Admin ve bot kontrolü
     if member.bot or member.guild_permissions.administrator:
         print(f"⚠️ {member.name} admin/bot olduğu için premium'a yükseltilmedi")
@@ -957,19 +995,29 @@ async def upgrade_to_premium(member: discord.Member):
 
     # Captcha Member kontrolü
     captcha_member_role = discord.utils.get(member.guild.roles, name=ROLE_CAPTCHA_MEMBER)
-    if not captcha_member_role or captcha_member_role not in member.roles:
+    if not captcha_member_role:
+        print(f"❌ '{ROLE_CAPTCHA_MEMBER}' rolü sunucuda bulunamadı!")
+        return False
+
+    if captcha_member_role not in member.roles:
         print(f"⚠️ {member.name} üzerinde '{ROLE_CAPTCHA_MEMBER}' rolü yok, premium verilemez")
         return False
 
     # Premium rolü ver
     try:
         premium_member_role = discord.utils.get(member.guild.roles, name=ROLE_PREMIUM_MEMBER)
+        if not premium_member_role:
+            print(f"❌ '{ROLE_PREMIUM_MEMBER}' rolü sunucuda bulunamadı!")
+            return False
+
         if premium_member_role:
             await member.add_roles(premium_member_role, reason="Lisans satın alındı - Premium üye")
             print(f"✅ {member.name} premium üye oldu!")
             return True
     except Exception as e:
         print(f"❌ Premium rol verilemedi: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
     return False
