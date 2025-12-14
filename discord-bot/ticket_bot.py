@@ -47,6 +47,11 @@ TICKET_CATEGORY_ID = None  # Manuel olarak ayarlanacak
 TICKET_LOGS_CHANNEL_ID = None  # Manuel olarak ayarlanacak
 DEVELOPER_ROLE_NAME = "Developer"
 
+# Rol isimleri
+ROLE_CAPTCHA_MEMBER = "Captcha Member"
+ROLE_PREMIUM_MEMBER = "Premium Captcha Member"
+ROLE_SERVER_BOOSTER = "Server Booster"
+
 # Linkler
 CAPTCHA_LINKS = {
     "0030.png": "https://limewire.com/d/A3dqU#J3jfw56jSM",
@@ -573,6 +578,13 @@ class PaymentConfirmView(discord.ui.View):
                         except Exception as dm_error:
                             print(f"❌ DM gönderilemedi: {dm_error}")
 
+                        # Premium rol ataması (sadece normal üyelere)
+                        premium_upgraded = await upgrade_to_premium(self.ticket_creator)
+                        if premium_upgraded:
+                            await interaction.channel.send(
+                                f"✨ {self.ticket_creator.mention} **Premium Captcha Member** rolüne yükseltildi!"
+                            )
+
                         # Butonu güncelle
                         button.label = "✅ Ödeme Tamamlandı"
                         button.style = discord.ButtonStyle.secondary
@@ -849,6 +861,118 @@ async def on_ready():
             name="Tickets | 🎫 Ticket Oluştur"
         )
     )
+
+    # Tüm sunucularda rol sistemini başlat
+    for guild in bot.guilds:
+        await setup_roles(guild)
+
+# =========================
+# ROL YÖNETİM SİSTEMİ
+# =========================
+
+async def setup_roles(guild: discord.Guild):
+    """Sunucuda rolleri oluştur ve mevcut üyelere dağıt"""
+    try:
+        # Rolleri oluştur veya kontrol et
+        captcha_member_role = discord.utils.get(guild.roles, name=ROLE_CAPTCHA_MEMBER)
+        if not captcha_member_role:
+            captcha_member_role = await guild.create_role(
+                name=ROLE_CAPTCHA_MEMBER,
+                color=discord.Color.blue(),
+                reason="Otomatik rol oluşturma - Yeni üyeler için"
+            )
+            print(f"✅ '{ROLE_CAPTCHA_MEMBER}' rolü oluşturuldu")
+
+        premium_member_role = discord.utils.get(guild.roles, name=ROLE_PREMIUM_MEMBER)
+        if not premium_member_role:
+            premium_member_role = await guild.create_role(
+                name=ROLE_PREMIUM_MEMBER,
+                color=discord.Color.gold(),
+                reason="Otomatik rol oluşturma - Premium üyeler için"
+            )
+            print(f"✅ '{ROLE_PREMIUM_MEMBER}' rolü oluşturuldu")
+
+        server_booster_role = discord.utils.get(guild.roles, name=ROLE_SERVER_BOOSTER)
+        if not server_booster_role:
+            server_booster_role = await guild.create_role(
+                name=ROLE_SERVER_BOOSTER,
+                color=discord.Color.pink(),
+                reason="Otomatik rol oluşturma - Server boosterlar için"
+            )
+            print(f"✅ '{ROLE_SERVER_BOOSTER}' rolü oluşturuldu")
+
+        # Mevcut tüm üyelere Captcha Member rolünü ver (bot ve admin olmayanlar)
+        assigned_count = 0
+        for member in guild.members:
+            if member.bot:
+                continue  # Botları atla
+            if member.guild_permissions.administrator:
+                continue  # Adminleri atla
+
+            # Captcha Member rolü yoksa ver
+            if captcha_member_role not in member.roles:
+                await member.add_roles(captcha_member_role, reason="Otomatik rol ataması")
+                assigned_count += 1
+
+        if assigned_count > 0:
+            print(f"✅ {assigned_count} üyeye '{ROLE_CAPTCHA_MEMBER}' rolü verildi")
+
+    except Exception as e:
+        print(f"❌ Rol kurulumu hatası: {e}")
+
+@bot.event
+async def on_member_join(member: discord.Member):
+    """Yeni üye katıldığında otomatik rol ver"""
+    if member.bot:
+        return  # Botlara rol verme
+
+    try:
+        captcha_member_role = discord.utils.get(member.guild.roles, name=ROLE_CAPTCHA_MEMBER)
+        if captcha_member_role:
+            await member.add_roles(captcha_member_role, reason="Yeni üye - Otomatik rol ataması")
+            print(f"✅ {member.name} katıldı ve '{ROLE_CAPTCHA_MEMBER}' rolü verildi")
+    except Exception as e:
+        print(f"❌ Yeni üyeye rol verilemedi: {e}")
+
+@bot.event
+async def on_member_update(before: discord.Member, after: discord.Member):
+    """Üye güncelleme - Boost kontrolü"""
+    # Boost kontrolü
+    if not before.premium_since and after.premium_since:
+        # Üye boost attı
+        try:
+            server_booster_role = discord.utils.get(after.guild.roles, name=ROLE_SERVER_BOOSTER)
+            if server_booster_role and server_booster_role not in after.roles:
+                await after.add_roles(server_booster_role, reason="Sunucuya boost attı")
+                print(f"✅ {after.name} boost attı ve '{ROLE_SERVER_BOOSTER}' rolü verildi")
+        except Exception as e:
+            print(f"❌ Booster rolü verilemedi: {e}")
+
+async def upgrade_to_premium(member: discord.Member):
+    """Üyeyi Premium'a yükselt (Sadece normal üyeler için)"""
+    # Admin ve bot kontrolü
+    if member.bot or member.guild_permissions.administrator:
+        print(f"⚠️ {member.name} admin/bot olduğu için premium'a yükseltilmedi")
+        return False
+
+    # Captcha Member kontrolü
+    captcha_member_role = discord.utils.get(member.guild.roles, name=ROLE_CAPTCHA_MEMBER)
+    if not captcha_member_role or captcha_member_role not in member.roles:
+        print(f"⚠️ {member.name} üzerinde '{ROLE_CAPTCHA_MEMBER}' rolü yok, premium verilemez")
+        return False
+
+    # Premium rolü ver
+    try:
+        premium_member_role = discord.utils.get(member.guild.roles, name=ROLE_PREMIUM_MEMBER)
+        if premium_member_role:
+            await member.add_roles(premium_member_role, reason="Lisans satın alındı - Premium üye")
+            print(f"✅ {member.name} premium üye oldu!")
+            return True
+    except Exception as e:
+        print(f"❌ Premium rol verilemedi: {e}")
+        return False
+
+    return False
 
 # =========================
 # MAIN
