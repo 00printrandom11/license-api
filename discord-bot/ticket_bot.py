@@ -529,6 +529,8 @@ class PaymentConfirmView(discord.ui.View):
 
                         # Müşteriye özel mesaj (DM) gönder
                         try:
+                            print(f"📧 DM gönderiliyor: {self.ticket_creator.name} (ID: {self.ticket_creator.id})")
+
                             dm_embed = discord.Embed(
                                 title="🎉 Lisans Oluşturuldu!",
                                 description=f"Ödemeniz onaylandı! İşte lisansınız:",
@@ -564,6 +566,7 @@ class PaymentConfirmView(discord.ui.View):
 
                             # DM gönder
                             await self.ticket_creator.send(embed=dm_embed)
+                            print(f"✅ DM başarıyla gönderildi: {self.ticket_creator.name}")
 
                             # Ticket'te bilgi ver
                             await interaction.channel.send(
@@ -571,12 +574,15 @@ class PaymentConfirmView(discord.ui.View):
                             )
 
                         except discord.Forbidden:
+                            print(f"⚠️ DM gönderilemedi: {self.ticket_creator.name} - DM'ler kapalı")
                             # DM kapalıysa ticket'te bilgi ver
                             await interaction.channel.send(
                                 f"⚠️ {self.ticket_creator.mention} DM'lerin kapalı olduğu için özel mesaj gönderilemedi! Lisans key'ini yukarıdan kopyala."
                             )
                         except Exception as dm_error:
-                            print(f"❌ DM gönderilemedi: {dm_error}")
+                            print(f"❌ DM gönderilemedi: {self.ticket_creator.name} - Hata: {dm_error}")
+                            import traceback
+                            traceback.print_exc()
 
                         # Premium rol ataması (sadece normal üyelere)
                         premium_upgraded = await upgrade_to_premium(self.ticket_creator)
@@ -623,27 +629,42 @@ async def iban_command(interaction: discord.Interaction):
 
     # Ticket sahibini bul (kanalı oluşturan)
     ticket_creator = None
+
+    # YÖNTEM 1: İlk embed mesajındaki mention'dan bul (en güvenilir)
     async for message in interaction.channel.history(limit=50, oldest_first=True):
         if message.embeds:
             for embed in message.embeds:
                 if embed.title == "🎫 Ticket Oluşturuldu":
                     # İlk mention edilen kullanıcı ticket sahibi
                     if message.mentions:
-                        ticket_creator = message.mentions[0]
+                        # Botları ve adminleri atla
+                        for mentioned_user in message.mentions:
+                            if not mentioned_user.bot and not mentioned_user.guild_permissions.administrator:
+                                ticket_creator = mentioned_user
+                                print(f"🔍 Ticket creator embed'den bulundu: {ticket_creator.name} (ID: {ticket_creator.id})")
+                                break
+                    if ticket_creator:
                         break
         if ticket_creator:
             break
 
+    # YÖNTEM 2: Eğer hala bulamadıysak, kanal overwrites (izinler) kullan
     if not ticket_creator:
-        # Fallback: Kanal izinlerinden bul
-        for member in interaction.guild.members:
-            permissions = interaction.channel.permissions_for(member)
-            if permissions.read_messages and not member.bot and member != interaction.guild.me:
-                if not member.guild_permissions.administrator:
-                    ticket_creator = member
-                    break
+        print("⚠️ Embed'den bulunamadı, kanal izinlerinden aranıyor...")
+        for target, overwrite in interaction.channel.overwrites.items():
+            # Member tipinde ve okuma izni varsa
+            if isinstance(target, discord.Member):
+                if overwrite.read_messages == True and not target.bot and target != interaction.guild.me:
+                    # Admin olmayanları al
+                    if not target.guild_permissions.administrator:
+                        ticket_creator = target
+                        print(f"🔍 Ticket creator izinlerden bulundu: {ticket_creator.name} (ID: {ticket_creator.id})")
+                        break
 
-    print(f"🔍 Ticket creator bulundu: {ticket_creator}")
+    if ticket_creator:
+        print(f"✅ Ticket creator kesin bulundu: {ticket_creator.name} (ID: {ticket_creator.id})")
+    else:
+        print(f"❌ Ticket creator bulunamadı!")
 
     # IBAN embed'i oluştur
     iban_embed = discord.Embed(
@@ -690,6 +711,77 @@ async def iban_command(interaction: discord.Interaction):
     )
 
     print(f"✅ /iban komutu başarıyla tamamlandı!")
+
+@bot.tree.command(name="check-roles", description="Sunucudaki rolleri ve bot rol sistemini kontrol et (Sadece Admin)")
+@app_commands.default_permissions(administrator=True)
+async def check_roles_command(interaction: discord.Interaction):
+    """Rolleri kontrol et ve rapor ver"""
+    guild = interaction.guild
+
+    embed = discord.Embed(
+        title="🔍 Rol Sistemi Kontrolü",
+        description="Bot'un aradığı roller ve mevcut durum:",
+        color=discord.Color.blue(),
+        timestamp=datetime.utcnow()
+    )
+
+    # Captcha Member
+    captcha_role = discord.utils.get(guild.roles, name=ROLE_CAPTCHA_MEMBER)
+    if captcha_role:
+        embed.add_field(
+            name=f"✅ {ROLE_CAPTCHA_MEMBER}",
+            value=f"ID: `{captcha_role.id}`\nÜye sayısı: {len(captcha_role.members)}",
+            inline=False
+        )
+    else:
+        embed.add_field(
+            name=f"❌ {ROLE_CAPTCHA_MEMBER}",
+            value="Bu rol sunucuda bulunamadı!",
+            inline=False
+        )
+
+    # Premium Member
+    premium_role = discord.utils.get(guild.roles, name=ROLE_PREMIUM_MEMBER)
+    if premium_role:
+        embed.add_field(
+            name=f"✅ {ROLE_PREMIUM_MEMBER}",
+            value=f"ID: `{premium_role.id}`\nÜye sayısı: {len(premium_role.members)}",
+            inline=False
+        )
+    else:
+        embed.add_field(
+            name=f"❌ {ROLE_PREMIUM_MEMBER}",
+            value="Bu rol sunucuda bulunamadı!",
+            inline=False
+        )
+
+    # Server Booster
+    booster_role = discord.utils.get(guild.roles, name=ROLE_SERVER_BOOSTER)
+    if booster_role:
+        embed.add_field(
+            name=f"✅ {ROLE_SERVER_BOOSTER}",
+            value=f"ID: `{booster_role.id}`\nÜye sayısı: {len(booster_role.members)}",
+            inline=False
+        )
+    else:
+        embed.add_field(
+            name=f"❌ {ROLE_SERVER_BOOSTER}",
+            value="Bu rol sunucuda bulunamadı!",
+            inline=False
+        )
+
+    # Tüm roller listesi
+    all_roles = "\n".join([f"• {role.name}" for role in guild.roles if role.name != "@everyone"])
+    embed.add_field(
+        name="📋 Sunucudaki Tüm Roller",
+        value=all_roles if all_roles else "Rol yok",
+        inline=False
+    )
+
+    embed.set_footer(text="Eğer roller bulunamıyorsa, isimlerini kontrol edin!")
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+    print(f"✅ /check-roles komutu {interaction.user.name} tarafından kullanıldı")
 
 @bot.tree.command(name="setup", description="Bot kurulumunu yap (Sadece Admin)")
 @app_commands.default_permissions(administrator=True)
